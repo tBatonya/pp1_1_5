@@ -1,11 +1,10 @@
 package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
+import jm.task.core.jdbc.util.Util;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
-import org.hibernate.query.NativeQuery;
 
 import java.util.List;
 
@@ -14,12 +13,12 @@ import static jm.task.core.jdbc.util.Util.getSessionFactory;
 public class UserDaoHibernateImpl implements UserDao {
     private static final SessionFactory sessionFactory = getSessionFactory();
 
-    public UserDaoHibernateImpl() {
-    }
-
     @Override
     public void createUsersTable() {
-        try (Session session = sessionFactory.openSession()) {
+        SessionFactory sessionFactoryToCreate = Util.getSessionFactory();
+        Session session = sessionFactoryToCreate.getCurrentSession();
+        try (sessionFactoryToCreate;
+             session) {
             session.beginTransaction();
             session.createSQLQuery("CREATE TABLE IF NOT EXISTS user" +
                     "(" +
@@ -29,27 +28,22 @@ public class UserDaoHibernateImpl implements UserDao {
                     "age TINYINT(10) " +
                     ")").addEntity(User.class).executeUpdate();
             session.getTransaction().commit();
-        }catch (HibernateException e){
-            throw new RuntimeException(e);
+        }catch (IllegalStateException e){
+            session.getTransaction().rollback();
         }
     }
 
     @Override
     public void dropUsersTable() {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction transaction = session.beginTransaction();
-            NativeQuery query = session
-                    .createSQLQuery("DROP TABLE IF EXISTS user");
-            try {
-                query.executeUpdate();
-                transaction.commit();
-            } catch (Exception e) {
-                if (transaction != null) {
-                    transaction.rollback();
-                }
-            }
-        } catch (HibernateException e) {
-            throw new RuntimeException(e);
+        SessionFactory sessionFactoryToDrop = Util.getSessionFactory();
+        Session session = sessionFactoryToDrop.getCurrentSession();
+        try (sessionFactoryToDrop;
+             session) {
+            session.beginTransaction();
+            session.createSQLQuery("DROP TABLE IF EXISTS user").executeUpdate();
+            session.getTransaction().commit();
+        }catch (IllegalStateException e){
+            session.getTransaction().rollback();
         }
     }
 
@@ -61,7 +55,6 @@ public class UserDaoHibernateImpl implements UserDao {
             User user = new User(name, lastName, age);
             session.persist(user);
             session.getTransaction().commit();
-            System.out.println("Добавлен пользователь " + user.getName() + " " + user.getLastName());
         } catch (HibernateException e) {
             if (session.getTransaction().isActive()) {
                 session.getTransaction().rollback();
@@ -71,58 +64,38 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void removeUserById(long id) {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction transaction = session.beginTransaction();
-            User userRemove = session.get(User.class, id);
-            try {
-                session.remove(userRemove);
-                transaction.commit();
-            } catch (Exception e) {
-                if (transaction != null) {
-                    transaction.rollback();
-                }
-            }
-        } catch (HibernateException e) {
-            throw new RuntimeException(e);
+        SessionFactory sessionFactoryToRemove = Util.getSessionFactory();
+        Session session = sessionFactoryToRemove.getCurrentSession();
+        try (sessionFactoryToRemove;
+             session) {
+            session.beginTransaction();
+            session.createQuery("DELETE FROM User WHERE id = :id").setParameter("id", id).executeUpdate();
+            session.getTransaction().commit();
+        }catch (IllegalStateException e){
+            session.getTransaction().rollback();
         }
     }
 
     @Override
     public List<User> getAllUsers() {
-        List<User> userList = null;
-        try (Session session = sessionFactory.openSession()) {
-            Transaction transaction = session.beginTransaction();
-            try {
-                userList = session
-                        .createQuery("FROM User", User.class)
-                        .getResultList();
-                transaction.commit();
-                return userList;
-            } catch (Exception e) {
-                if (transaction != null) {
-                    transaction.rollback();
-                }
-            }
-        } catch (HibernateException e) {
-            throw new RuntimeException(e);
+
+        try (SessionFactory sessionFactoryToGet = Util.getSessionFactory();
+             Session session = sessionFactoryToGet.getCurrentSession()) {
+            session.beginTransaction();
+            return session.createQuery("FROM User", User.class).list();
         }
-        return userList;
     }
     @Override
     public void cleanUsersTable() {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction transaction = session.beginTransaction();
-            NativeQuery query = session.createSQLQuery("DELETE FROM user");
-            try {
-                query.executeUpdate();
-                transaction.commit();
-            } catch (Exception e) {
-                if (transaction != null) {
-                    transaction.rollback();
-                }
-            }
-        } catch (HibernateException e) {
-            throw new RuntimeException(e);
+        SessionFactory sessionFactoryToClean = Util.getSessionFactory();
+        Session session = sessionFactoryToClean.getCurrentSession();
+        try (sessionFactoryToClean;
+             session) {
+            session.beginTransaction();
+            session.createQuery("DELETE FROM User").executeUpdate();
+            session.getTransaction().commit();
+        }catch (IllegalStateException e){
+            session.getTransaction().rollback();
         }
     }
 }
