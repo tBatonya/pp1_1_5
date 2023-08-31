@@ -1,16 +1,17 @@
 package jm.task.core.jdbc.model;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity// выделить классы, связанные с базой данных
 @Table(name = "user")
 public class User {
     @Id//первичный ключ
-    @Column(name = "Id")//соотнести поле-столбец
+    @Column(name = "id")//соотнести поле-столбец
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "Name")
+    @Column(name = "name")
     private String name;
 
     @Column(name = "lastName")
@@ -18,6 +19,19 @@ public class User {
 
     @Column(name = "age")
     private Byte age;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(id, user.id) && Objects.equals(name, user.name) && Objects.equals(lastName, user.lastName) && Objects.equals(age, user.age);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, lastName, age);
+    }
 
     public User() {
 

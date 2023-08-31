@@ -12,19 +12,22 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 public class Util {
+    private Util() {
+        throw new IllegalStateException("Utility class");}
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
-    static final String USERNAME = "root";
-    static final String PASSWORD = "root";
-    static final String URL = "jdbc:mysql://localhost:3306/115db";
+    private static final String USER_NAME = "root";
+
+    private static final String PASSWORD = "root";
+    private static final String URL = "jdbc:mysql://localhost:3306/115db";
 
 
     public static Connection getConnection() {
         Connection connection = null;
         try {
             Class.forName(DRIVER);
-            connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            connection = DriverManager.getConnection(URL, USER_NAME, PASSWORD);
         } catch (SQLException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
         return connection;
     }
@@ -34,7 +37,7 @@ public class Util {
         Properties settings = new Properties();
         settings.put(AvailableSettings.DRIVER, DRIVER);
         settings.put(AvailableSettings.URL, URL + "?useSSL=false");
-        settings.put(AvailableSettings.USER, USERNAME);
+        settings.put(AvailableSettings.USER, USER_NAME);
         settings.put(AvailableSettings.PASS, PASSWORD);
         settings.put(AvailableSettings.DIALECT, "org.hibernate.dialect.MySQL5Dialect");
         settings.put(AvailableSettings.SHOW_SQL, "true"); //Hibernate будет дублировать в консоль все запросы, которые выполняет

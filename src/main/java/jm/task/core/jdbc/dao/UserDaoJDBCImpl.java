@@ -9,117 +9,80 @@ import java.util.List;
 
 public class UserDaoJDBCImpl implements UserDao {
     public UserDaoJDBCImpl() {
-
+//пустой метод
     }
     @Override
     public void createUsersTable() {
-        String sql = "CREATE TABLE IF NOT EXISTS user " +
+        try (Connection connectionToCreate = Util.getConnection();
+             Statement statement = connectionToCreate.createStatement()) {
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS user " +
                 "(id INTEGER NOT NULL AUTO_INCREMENT, " +
                 " name VARCHAR(32), " +
                 " lastname VARCHAR(32), " +
                 " age BIT(8), " +
-                " PRIMARY KEY ( id ))";
-        try (Connection connection = Util.getConnection();
-             Statement statement = connection.createStatement()) {
-            try {
-                statement.executeUpdate(sql);
-                connection.commit();
-            } catch (SQLException e1) {
-                connection.rollback();
-            }
+                " PRIMARY KEY ( id ))");
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
 
     }
     @Override
     public void dropUsersTable() {
-        String sql = "DROP TABLE IF EXISTS user";
         try (Connection connection = Util.getConnection();
              Statement statement = connection.createStatement()) {
-            try {
-                statement.executeUpdate(sql);
-                connection.commit();
-            } catch (SQLException e1) {
-                connection.rollback();
-            }
+            statement.executeUpdate("DROP TABLE IF EXISTS user");
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
+
     }
     @Override
     public void saveUser(String name, String lastName, byte age) {
-        String sql = "INSERT INTO user (name, lastname, age) VALUES (?, ?, ?)";
+
         try (Connection connection = Util.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setString(1, name);
-            preparedStatement.setString(2, lastName);
-            preparedStatement.setByte(3, age);
-            try {
-                preparedStatement.executeUpdate();
-                connection.commit();
-            } catch (SQLException e) {
-                connection.rollback();
-            }
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO user VALUES (1,?,?,?)")) {
+            statement.setString(1, name);
+            statement.setString(2, lastName);
+            statement.setInt(3, age);
+            statement.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
     @Override
     public void removeUserById(long id) {
-        String sql = "DELETE FROM user WHERE id = ?";
         try (Connection connection = Util.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
-            preparedStatement.setLong(1, id);
-            try {
-                preparedStatement.executeUpdate();
-                connection.commit();
-            } catch (SQLException e) {
-                connection.rollback();
-            }
+             PreparedStatement statement = connection.prepareStatement("DELETE FROM user WHERE ID = ?")) {
+            statement.setLong(1, id);
+            statement.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
     @Override
     public List<User> getAllUsers() {
-        String sql = "SELECT * FROM user";
-        List<User> userList = null;
-        try (Connection connection = Util.getConnection();
-             Statement statement = connection.createStatement()) {
-            try {
-                ResultSet resultSet = statement.executeQuery(sql);
-                connection.commit();
-                userList = new ArrayList<>(10);
-                while (resultSet.next()) {
-                    User resultUser = new User();
-                    resultUser.setId(resultSet.getLong("id"));
-                    resultUser.setName(resultSet.getString("name"));
-                    resultUser.setLastName(resultSet.getString("lastname"));
-                    resultUser.setAge(resultSet.getByte("age"));
-                    userList.add(resultUser);
-                }
-            } catch (SQLException e) {
-                connection.rollback();
+        List<User> list = new ArrayList<>();
+        try (Connection connection = Util.getConnection(); Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM user");
+            while (resultSet.next()) {
+                User user = new User();
+                user.setId(resultSet.getLong("id"));
+                user.setName(resultSet.getString("name"));
+                user.setLastName(resultSet.getString("lastName"));
+                user.setAge(resultSet.getByte("age"));
+                list.add(user);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
-        return userList;
+        return list;
     }
     @Override
     public void cleanUsersTable() {
-        String sql = "DELETE FROM user";
-        try (Connection connection = Util.getConnection();
-             Statement statement = connection.createStatement()) {
-            try {
-                statement.executeUpdate(sql);
-                connection.commit();
-            } catch (SQLException e) {
-                connection.rollback();
-            }
+        try (Connection connection = Util.getConnection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate("TRUNCATE TABLE user");
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 }
